@@ -34,3 +34,6 @@ The model uses `<|begin_of_thought|>` / `<|begin_of_solution|>` tags to think th
 - **Tool calling dataset**: [Glaive Function Calling v2](https://huggingface.co/datasets/glaiveai/glaive-function-calling-v2)
 - **Reasoning dataset**: [Sky-T1](https://huggingface.co/datasets/NovaSky-AI/Sky-T1_data_17k)
 - **Hardware**: NVIDIA RTX 3070 8GB
+
+<img width="918" height="586" alt="image" src="https://github.com/user-attachments/assets/9ece2884-f979-4582-88ad-83f274330e07" />
+<img width="844" height="509" alt="image" src="https://github.com/user-attachments/assets/00d2fdcd-9740-46b5-ab47-cd074cb489fe" />
