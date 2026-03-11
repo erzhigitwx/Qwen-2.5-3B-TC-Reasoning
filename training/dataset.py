@@ -3,7 +3,7 @@ from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import Dataset
 import json
 
-class TCDataset(Dataset):
+class SFTDataset(Dataset):
     def __init__(self, path, tokenizer, max_length=512):
         with open(path, encoding="utf-8") as f:
             self.data = json.load(f)

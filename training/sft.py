@@ -2,8 +2,8 @@ import torch
 import os
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 from peft import get_peft_model, LoraConfig, TaskType, prepare_model_for_kbit_training
-from torch.utils.data import DataLoader
-from training.dataset import TCDataset, collate_fn
+from torch.utils.data import DataLoader, ConcatDataset
+from training.dataset import SFTDataset, collate_fn
 
 class Checkpoint:
     def __init__(self, model, path="../checkpoints"):
@@ -39,7 +39,7 @@ class Checkpoint:
             return None
         return torch.load(os.path.join(self.path, entries[-1]), map_location="cuda")
 
-class TCModel:
+class Model:
     def __init__(self):
         os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
@@ -50,7 +50,7 @@ class TCModel:
 
         bnb_config = BitsAndBytesConfig(
             load_in_4bit=True,
-            bnb_4bit_compute_dtype=torch.float16,
+            bnb_4bit_compute_dtype=torch.bfloat16,
             bnb_4bit_use_double_quant=True,
             bnb_4bit_quant_type="nf4"
         )
@@ -86,8 +86,11 @@ class TCModel:
             print("No checkpoint found, starting from scratch")
 
     def train(self):
-        dataset = TCDataset("../data/processed/tool_calling.json", self.tokenizer)
-        loader = DataLoader(dataset, batch_size=4, shuffle=True, collate_fn=lambda batch: collate_fn(batch, self.tokenizer))
+        dataset_tc = SFTDataset("../data/processed/tool_calling.json", self.tokenizer)
+        dataset_rs = SFTDataset("../data/processed/reasoning.json", self.tokenizer)
+        combined = ConcatDataset([dataset_tc, dataset_rs])
+        loader = DataLoader(combined, batch_size=4, shuffle=True, collate_fn=lambda batch: collate_fn(batch, self.tokenizer))
+        GRAD_ACCUM = 4
 
         self.model.train()
         for step, batch in enumerate(loader):
@@ -98,14 +101,14 @@ class TCModel:
             labels = batch["labels"].to("cuda")
 
             outputs = self.model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
-            loss = outputs.loss
-
+            loss = outputs.loss / GRAD_ACCUM
             loss.backward()
-            self.optimizer.step()
-            self.optimizer.zero_grad()
+
+            if (step + 1) % GRAD_ACCUM == 0:
+                self.optimizer.step()
+                self.optimizer.zero_grad()
 
             print(f"Step {global_step} | Loss {loss.item():.4f}")
-
             if global_step % 50 == 0 and global_step > 0:
                 self.checkpoint.save(global_step, self.optimizer, loss)
 
@@ -117,5 +120,5 @@ class TCModel:
         return result[fields[0]] if len(fields) == 1 else result
 
 if __name__ == "__main__":
-    model = TCModel()
+    model = Model()
     model.train()

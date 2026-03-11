@@ -1,0 +1,8 @@
+{
+  "tool_accuracy": 0.8,
+  "avg_arg_score": 0.4,
+  "exact_match": 1.0,
+  "rouge1": 0.526925,
+  "rougeL": 0.526925,
+  "bleu": 0.06385
+}
